@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>GIDEON - Text Selector & Replacer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #c9a84c;
+            --gold-light: #e8c97a;
+            --gold-dim: #7a6130;
+            --ink: #1a1510;
+            --parchment: #f5f0e8;
+            --parchment-dark: #e8dfc8;
+            --parchment-deeper: #d4c9a8;
+            --crimson: #8b1a1a;
+            --crimson-light: #c0392b;
+            --steel: #4a5568;
+            --panel: #2a2318;
+            --panel-light: #3d3322;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Crimson Pro', Georgia, serif;
+            background: var(--ink);
+            color: var(--parchment);
+            min-height: 100vh;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(201,168,76,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(139,26,26,0.06) 0%, transparent 50%);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(180deg, #0d0b08 0%, var(--panel) 100%);
+            border-bottom: 2px solid var(--gold-dim);
+            padding: 24px 40px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+        }
+        .header-icon {
+            font-size: 2.8rem;
+            filter: drop-shadow(0 0 12px rgba(201,168,76,0.5));
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+        @keyframes glow-pulse {
+            0%, 100% { filter: drop-shadow(0 0 8px rgba(201,168,76,0.4)); }
+            50% { filter: drop-shadow(0 0 18px rgba(201,168,76,0.7)); }
+        }
+        .header-text h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: 6px;
+            text-shadow: 0 0 30px rgba(201,168,76,0.3);
+        }
+        .header-text .motto {
+            font-style: italic;
+            color: var(--gold-dim);
+            font-size: 0.9rem;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 0;
+            min-height: calc(100vh - 90px);
+        }
+
+        /* Main Panel */
+        .main-panel {
+            padding: 28px 32px;
+            border-right: 1px solid var(--gold-dim);
+        }
+
+        /* Section Labels */
+        .section-label {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--gold-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        /* Textarea */
+        .text-area-wrap { position: relative; margin-bottom: 16px; }
+        textarea {
+            width: 100%;
+            height: 220px;
+            padding: 16px;
+            background: rgba(245,240,232,0.06);
+            border: 1px solid var(--gold-dim);
+            border-radius: 4px;
+            color: var(--parchment);
+            font-family: 'Crimson Pro', serif;
+            font-size: 15px;
+            line-height: 1.7;
+            resize: vertical;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 2px rgba(201,168,76,0.15), inset 0 0 20px rgba(201,168,76,0.03);
+        }
+        textarea::placeholder { color: rgba(245,240,232,0.25); font-style: italic; }
+
+        /* Undo/Redo Bar */
+        .history-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .history-info {
+            font-size: 12px;
+            color: var(--gold-dim);
+            font-style: italic;
+            margin-left: auto;
+        }
+        .btn-history {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            background: var(--panel-light);
+            border: 1px solid var(--gold-dim);
+            border-radius: 3px;
+            color: var(--parchment);
+            font-family: 'Crimson Pro', serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-history:hover:not(:disabled) {
+            border-color: var(--gold);
+            color: var(--gold);
+            background: rgba(201,168,76,0.08);
+        }
+        .btn-history:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .btn-history .icon { font-size: 15px; }
+
+        /* Controls */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 80px;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .field-group label {
+            display: block;
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--gold-dim);
+            margin-bottom: 6px;
+        }
+        .field-group input, .field-group select {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(245,240,232,0.05);
+            border: 1px solid var(--gold-dim);
+            border-radius: 3px;
+            color: var(--parchment);
+            font-family: 'Crimson Pro', serif;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .field-group input:focus, .field-group select:focus {
+            outline: none;
+            border-color: var(--gold);
+        }
+        .field-group select option { background: var(--panel); }
+
+        /* Buttons */
+        .btn-row { display: flex; gap: 10px; margin-bottom: 14px; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-search {
+            background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+            color: var(--ink);
+            flex: 1;
+        }
+        .btn-search:hover { filter: brightness(1.15); box-shadow: 0 4px 15px rgba(201,168,76,0.3); }
+        .btn-download {
+            background: var(--panel-light);
+            color: var(--parchment);
+            border: 1px solid var(--gold-dim);
+        }
+        .btn-download:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Selection tools */
+        .selection-tools { display: flex; gap: 8px; margin-bottom: 12px; }
+        .btn-select {
+            padding: 5px 12px;
+            background: transparent;
+            border: 1px solid var(--gold-dim);
+            border-radius: 2px;
+            color: var(--gold-dim);
+            font-family: 'Cinzel', serif;
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-select:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* Match List */
+        #matchList { max-height: 320px; overflow-y: auto; padding-right: 4px; }
+        #matchList::-webkit-scrollbar { width: 4px; }
+        #matchList::-webkit-scrollbar-track { background: transparent; }
+        #matchList::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
+
+        .match-card {
+            background: rgba(245,240,232,0.04);
+            border-left: 3px solid var(--gold-dim);
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-radius: 0 3px 3px 0;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .match-card:hover { border-color: var(--gold); background: rgba(201,168,76,0.05); }
+        .match-card input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-top: 3px;
+            flex-shrink: 0;
+            accent-color: var(--gold);
+            cursor: pointer;
+        }
+        .match-card label {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--parchment-dark);
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        .match-card label strong {
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            color: var(--gold-dim);
+            display: block;
+            margin-bottom: 2px;
+        }
+        b { color: var(--gold-light); background: rgba(201,168,76,0.12); padding: 0 3px; border-radius: 2px; }
+
+        #actionArea { display: none; margin-top: 16px; border-top: 1px solid rgba(201,168,76,0.2); padding-top: 16px; }
+
+        .btn-apply {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--crimson), #a93226);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            cursor: pointer;
+            margin-top: 14px;
+            transition: all 0.2s;
+        }
+        .btn-apply:hover { filter: brightness(1.2); box-shadow: 0 4px 20px rgba(139,26,26,0.4); }
+
+        /* ======================== */
+        /* NOTES SIDEBAR            */
+        /* ======================== */
+        .notes-panel {
+            background: var(--panel);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--gold-dim);
+        }
+        .notes-header {
+            padding: 20px 20px 14px;
+            border-bottom: 1px solid rgba(201,168,76,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .notes-title {
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            color: var(--gold);
+        }
+        .note-count {
+            background: var(--gold-dim);
+            color: var(--ink);
+            font-family: 'Cinzel', serif;
+            font-size: 0.6rem;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px;
+        }
+        .notes-list::-webkit-scrollbar { width: 3px; }
+        .notes-list::-webkit-scrollbar-thumb { background: var(--gold-dim); }
+
+        .note-item {
+            background: rgba(245,240,232,0.04);
+            border: 1px solid rgba(201,168,76,0.2);
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 10px;
+            position: relative;
+            transition: border-color 0.2s;
+            animation: note-in 0.25s ease;
+        }
+        @keyframes note-in {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .note-item:hover { border-color: var(--gold-dim); }
+        .note-item.done { opacity: 0.45; }
+        .note-item.done .note-body { text-decoration: line-through; }
+
+        .note-header-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .note-tag {
+            font-family: 'Cinzel', serif;
+            font-size: 0.55rem;
+            letter-spacing: 1px;
+            padding: 2px 7px;
+            border-radius: 2px;
+            border: 1px solid;
+        }
+        .tag-search { color: #6ab0f5; border-color: #6ab0f530; background: #6ab0f510; }
+        .tag-replace { color: #7dd97d; border-color: #7dd97d30; background: #7dd97d10; }
+        .tag-note { color: var(--gold-dim); border-color: rgba(201,168,76,0.2); background: rgba(201,168,76,0.05); }
+
+        .note-date {
+            font-size: 11px;
+            color: rgba(245,240,232,0.25);
+            margin-left: auto;
+            font-style: italic;
+        }
+        .note-body {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--parchment-dark);
+            word-break: break-word;
+        }
+        .note-from-to {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+            font-size: 13px;
+        }
+        .note-keyword { color: #6ab0f5; font-style: italic; }
+        .note-arrow { color: var(--gold-dim); }
+        .note-repl { color: #7dd97d; font-style: italic; }
+
+        .note-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .note-btn {
+            padding: 3px 9px;
+            background: transparent;
+            border: 1px solid rgba(245,240,232,0.15);
+            border-radius: 2px;
+            color: rgba(245,240,232,0.45);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .note-btn:hover { color: var(--parchment); border-color: rgba(245,240,232,0.4); }
+        .note-btn.load-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+        .note-btn.done-btn:hover { color: #7dd97d; border-color: #7dd97d50; }
+        .note-btn.del-btn:hover { color: var(--crimson-light); border-color: rgba(192,57,43,0.4); }
+
+        .notes-footer {
+            padding: 14px;
+            border-top: 1px solid rgba(201,168,76,0.2);
+        }
+        .add-note-area textarea {
+            height: 70px;
+            font-size: 13px;
+            margin-bottom: 8px;
+            background: rgba(245,240,232,0.04);
+        }
+        .note-type-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .note-type-btn {
+            flex: 1;
+            padding: 5px 8px;
+            background: transparent;
+            border: 1px solid rgba(201,168,76,0.25);
+            border-radius: 2px;
+            color: rgba(245,240,232,0.4);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'Crimson Pro', serif;
+        }
+        .note-type-btn.active {
+            background: rgba(201,168,76,0.1);
+            border-color: var(--gold-dim);
+            color: var(--gold);
+        }
+        .btn-add-note {
+            width: 100%;
+            padding: 8px;
+            background: var(--panel-light);
+            border: 1px solid var(--gold-dim);
+            border-radius: 3px;
+            color: var(--gold);
+            font-family: 'Cinzel', serif;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-add-note:hover { background: rgba(201,168,76,0.1); }
+        .btn-capture-fields {
+            width: 100%;
+            padding: 7px;
+            background: rgba(106,176,245,0.08);
+            border: 1px solid rgba(106,176,245,0.25);
+            border-radius: 3px;
+            color: #6ab0f5;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+            font-family: 'Crimson Pro', serif;
+        }
+        .btn-capture-fields:hover { background: rgba(106,176,245,0.12); }
+
+        .empty-notes {
+            text-align: center;
+            padding: 30px 16px;
+            color: rgba(245,240,232,0.2);
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--panel-light);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 22px;
+            border-radius: 4px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 999;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 16px;
+            color: rgba(245,240,232,0.2);
+            font-size: 12px;
+            border-top: 1px solid rgba(201,168,76,0.1);
+            background: var(--panel);
+        }
+        .footer a { color: var(--gold-dim); text-decoration: none; }
+        .footer a:hover { color: var(--gold); }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-icon">⚔️</div>
+    <div class="header-text">
+        <h1>GIDEON</h1>
+        <div class="motto">"Menyaring dengan presisi, memurnikan dengan teliti." — Hakim-Hakim 7</div>
+    </div>
+</div>
+
+<div class="layout">
+    <!-- MAIN PANEL -->
+    <div class="main-panel">
+        <div class="section-label">Teks Utama</div>
+        <div class="text-area-wrap">
+            <textarea id="mainText" placeholder="Tempelkan teks Anda di sini..."></textarea>
+        </div>
+
+        <!-- History Bar -->
+        <div class="history-bar">
+            <button class="btn-history" id="btnUndo" onclick="doUndo()" disabled title="Ctrl+Z">
+                <span class="icon">↩</span> Undo
+            </button>
+            <button class="btn-history" id="btnRedo" onclick="doRedo()" disabled title="Ctrl+Y">
+                <span class="icon">↪</span> Redo
+            </button>
+            <div class="history-info" id="historyInfo">Belum ada perubahan</div>
+            <button class="btn btn-download" onclick="downloadText()" style="flex:none;padding:7px 14px;font-size:12px;">
+                ⬇ Unduh .txt
+            </button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-grid">
+            <div class="field-group">
+                <label>🔍 Cari Kata</label>
+                <input type="text" id="keyword" placeholder="Cari...">
+            </div>
+            <div class="field-group">
+                <label>✍ Ganti Menjadi</label>
+                <input type="text" id="replacement" placeholder="Ganti...">
+            </div>
+            <div class="field-group">
+                <label>🛠 Filter</label>
+                <select id="filterMode">
+                    <option value="normal">Normal (Semua)</option>
+                    <option value="prefix">Prefix (Awal Kata)</option>
+                    <option value="suffix">Suffix (Akhir Kata)</option>
+                    <option value="infix">Infix (Tengah Kata)</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>📏 Konteks</label>
+                <input type="number" id="nChars" value="5">
+            </div>
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-search" onclick="findMatches()">⚔ Tampilkan Semua Kecocokan</button>
+        </div>
+
+        <div id="actionArea">
+            <div class="selection-tools">
+                <button class="btn-select" onclick="toggleChecks(true)">✅ Pilih Semua</button>
+                <button class="btn-select" onclick="toggleChecks(false)">✕ Batal Semua</button>
+            </div>
+            <div id="matchList"></div>
+            <button class="btn-apply" onclick="applyReplacement()">⚔ TERAPKAN PENGGANTIAN</button>
+        </div>
+    </div>
+
+    <!-- NOTES SIDEBAR -->
+    <div class="notes-panel">
+        <div class="notes-header">
+            <div class="notes-title">📜 CATATAN MISI</div>
+            <div class="note-count" id="noteCount">0</div>
+        </div>
+
+        <div class="notes-list" id="notesList">
+            <div class="empty-notes">Belum ada catatan.<br>Catat tugas pencarian & penggantian Anda di sini.</div>
+        </div>
+
+        <div class="notes-footer">
+            <!-- Type selector -->
+            <div class="note-type-row">
+                <button class="note-type-btn active" data-type="pair" onclick="selectNoteType(this)">Cari → Ganti</button>
+                <button class="note-type-btn" data-type="note" onclick="selectNoteType(this)">Catatan Bebas</button>
+            </div>
+
+            <!-- Capture from fields -->
+            <button class="btn-capture-fields" id="captureBtn" onclick="captureFields()">
+                ⬆ Ambil dari Kolom Cari & Ganti
+            </button>
+
+            <!-- Manual note input -->
+            <div class="add-note-area">
+                <textarea id="noteInput" placeholder="Tulis catatan..."></textarea>
+                <button class="btn-add-note" onclick="addNote()">+ TAMBAH CATATAN</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    Dukung pengembangan: <a href="https://saweria.co" target="_blank">saweria.co/emberdanmesin</a>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== HISTORY (UNDO/REDO) =====
+const history = [];
+let historyIndex = -1;
+const MAX_HISTORY = 50;
+
+function saveHistory(text) {
+    // Remove any redo states
+    if (historyIndex < history.length - 1) {
+        history.splice(historyIndex + 1);
+    }
+    history.push(text);
+    if (history.length > MAX_HISTORY) history.shift();
+    historyIndex = history.length - 1;
+    updateHistoryUI();
+}
+
+function doUndo() {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    document.getElementById('mainText').value = history[historyIndex];
+    updateHistoryUI();
+    showToast("Perubahan dibatalkan (Undo)");
+}
+
+function doRedo() {
+    if (historyIndex >= history.length - 1) return;
+    historyIndex++;
+    document.getElementById('mainText').value = history[historyIndex];
+    updateHistoryUI();
+    showToast("Perubahan dikembalikan (Redo)");
+}
+
+function updateHistoryUI() {
+    const undoBtn = document.getElementById('btnUndo');
+    const redoBtn = document.getElementById('btnRedo');
+    const info = document.getElementById('historyInfo');
+
+    undoBtn.disabled = historyIndex <= 0;
+    redoBtn.disabled = historyIndex >= history.length - 1;
+
+    const total = history.length;
+    const cur = historyIndex + 1;
+    if (total <= 1) {
+        info.textContent = 'Belum ada perubahan';
+    } else {
+        info.textContent = `Versi ${cur} dari ${total}`;
+    }
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); doUndo(); }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) { e.preventDefault(); doRedo(); }
+});
+
+// Track textarea changes for initial save
+document.getElementById('mainText').addEventListener('input', function() {
+    if (history.length === 0) saveHistory(this.value);
+});
+document.getElementById('mainText').addEventListener('paste', function() {
+    setTimeout(() => saveHistory(this.value), 10);
+});
+
+// ===== FIND & REPLACE =====
+function findMatches() {
+    const text = document.getElementById('mainText').value;
+    const key = document.getElementById('keyword').value;
+    const mode = document.getElementById('filterMode').value;
+    const n = parseInt(document.getElementById('nChars').value) || 0;
+    const listDiv = document.getElementById('matchList');
+
+    listDiv.innerHTML = '';
+    if (!key) { showToast("Masukkan kata yang dicari!"); return; }
+
+    let escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let regexSource = escapedKey;
+    if (mode === 'prefix') regexSource = '\\b' + escapedKey + '(?=\\w)';
+    else if (mode === 'suffix') regexSource = '(?<=\\w)' + escapedKey + '\\b';
+    else if (mode === 'infix') regexSource = '(?<=\\w)' + escapedKey + '(?=\\w)';
+
+    const regex = new RegExp(regexSource, 'gi');
+    let match;
+    let found = false;
+
+    while ((match = regex.exec(text)) !== null) {
+        found = true;
+        const start = match.index;
+        const matchLen = match[0].length;
+        const ctxStart = Math.max(0, start - n);
+        const ctxEnd = Math.min(text.length, start + matchLen + n);
+        const context = `...${text.substring(ctxStart, start)}<b>${text.substring(start, start + matchLen)}</b>${text.substring(start + matchLen, ctxEnd)}...`;
+
+        listDiv.innerHTML += `
+            <div class="match-card">
+                <input type="checkbox" class="match-idx" value="${start}" data-length="${matchLen}" id="m${start}">
+                <label for="m${start}">
+                    <strong>Posisi ${start}</strong>
+                    ${context}
+                </label>
+            </div>`;
+    }
+    document.getElementById('actionArea').style.display = found ? 'block' : 'none';
+    if (!found) showToast("Kata tidak ditemukan dengan filter terpilih.");
+}
+
+function toggleChecks(status) {
+    document.querySelectorAll('.match-idx').forEach(cb => cb.checked = status);
+}
+
+function applyReplacement() {
+    let text = document.getElementById('mainText').value;
+    const rep = document.getElementById('replacement').value;
+    const checkboxes = document.querySelectorAll('.match-idx:checked');
+
+    if (checkboxes.length === 0) { showToast("Pilih setidaknya satu item."); return; }
+
+    // Save before change
+    saveHistory(text);
+
+    let selectedItems = Array.from(checkboxes).map(cb => ({
+        pos: parseInt(cb.value),
+        len: parseInt(cb.getAttribute('data-length'))
+    })).sort((a, b) => b.pos - a.pos);
+
+    selectedItems.forEach(item => {
+        text = text.substring(0, item.pos) + rep + text.substring(item.pos + item.len);
+    });
+
+    document.getElementById('mainText').value = text;
+    saveHistory(text);
+    document.getElementById('matchList').innerHTML = '';
+    document.getElementById('actionArea').style.display = 'none';
+    showToast(`GIDEON: ${selectedItems.length} kata diganti!`);
+}
+
+function downloadText() {
+    const text = document.getElementById('mainText').value;
+    if (!text) { showToast("Teks masih kosong."); return; }
+    const blob = new Blob([text], { type: 'text/plain' });
+    const anchor = document.createElement('a');
+    anchor.download = 'gideon_result.txt';
+    anchor.href = window.URL.createObjectURL(blob);
+    anchor.click();
+    window.URL.revokeObjectURL(anchor.href);
+}
+
+// ===== NOTES SYSTEM (localStorage) =====
+const STORAGE_KEY = 'gideon_notes_v2';
+let notes = [];
+let currentNoteType = 'pair';
+
+function loadNotes() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        notes = raw ? JSON.parse(raw) : [];
+    } catch { notes = []; }
+    renderNotes();
+}
+
+function saveNotes() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    document.getElementById('noteCount').textContent = notes.filter(n => !n.done).length;
+}
+
+function selectNoteType(btn) {
+    document.querySelectorAll('.note-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentNoteType = btn.dataset.type;
+
+    const captureBtn = document.getElementById('captureBtn');
+    const noteInput = document.getElementById('noteInput');
+    if (currentNoteType === 'pair') {
+        captureBtn.style.display = 'block';
+        noteInput.placeholder = 'Atau tulis manual: kata1 → ganti1';
+    } else {
+        captureBtn.style.display = 'none';
+        noteInput.placeholder = 'Tulis catatan bebas Anda...';
+    }
+}
+
+function captureFields() {
+    const keyword = document.getElementById('keyword').value.trim();
+    const replacement = document.getElementById('replacement').value.trim();
+    if (!keyword) { showToast("Kolom 'Cari Kata' masih kosong!"); return; }
+
+    notes.unshift({
+        id: Date.now(),
+        type: 'pair',
+        keyword,
+        replacement,
+        body: '',
+        date: formatDate(new Date()),
+        done: false
+    });
+    saveNotes();
+    renderNotes();
+    showToast("Catatan ditambahkan!");
+}
+
+function addNote() {
+    const input = document.getElementById('noteInput');
+    const text = input.value.trim();
+    if (!text) { showToast("Catatan kosong!"); return; }
+
+    if (currentNoteType === 'pair') {
+        // Try to parse "keyword → replacement"
+        const parts = text.split(/→|->/).map(s => s.trim());
+        notes.unshift({
+            id: Date.now(),
+            type: 'pair',
+            keyword: parts[0] || text,
+            replacement: parts[1] || '',
+            body: text,
+            date: formatDate(new Date()),
+            done: false
+        });
+    } else {
+        notes.unshift({
+            id: Date.now(),
+            type: 'note',
+            body: text,
+            date: formatDate(new Date()),
+            done: false
+        });
+    }
+
+    saveNotes();
+    renderNotes();
+    input.value = '';
+    showToast("Catatan ditambahkan!");
+}
+
+function renderNotes() {
+    const list = document.getElementById('notesList');
+    document.getElementById('noteCount').textContent = notes.filter(n => !n.done).length;
+
+    if (notes.length === 0) {
+        list.innerHTML = '<div class="empty-notes">Belum ada catatan.<br>Catat tugas pencarian & penggantian Anda di sini.</div>';
+        return;
+    }
+
+    list.innerHTML = notes.map(note => {
+        const doneClass = note.done ? ' done' : '';
+        if (note.type === 'pair') {
+            return `
+            <div class="note-item${doneClass}" id="note-${note.id}">
+                <div class="note-header-row">
+                    <span class="note-tag tag-search">CARI</span>
+                    <span class="note-tag tag-replace">GANTI</span>
+                    <span class="note-date">${note.date}</span>
+                </div>
+                <div class="note-from-to">
+                    <span class="note-keyword">${escHtml(note.keyword)}</span>
+                    <span class="note-arrow">→</span>
+                    <span class="note-repl">${note.replacement ? escHtml(note.replacement) : '<em style="opacity:0.4">kosong</em>'}</span>
+                </div>
+                <div class="note-actions">
+                    <button class="note-btn load-btn" onclick="loadNoteToFields(${note.id})">↓ Muat ke Kolom</button>
+                    <button class="note-btn done-btn" onclick="toggleNoteDone(${note.id})">${note.done ? '↺ Aktifkan' : '✓ Selesai'}</button>
+                    <button class="note-btn del-btn" onclick="deleteNote(${note.id})">✕ Hapus</button>
+                </div>
+            </div>`;
+        } else {
+            return `
+            <div class="note-item${doneClass}" id="note-${note.id}">
+                <div class="note-header-row">
+                    <span class="note-tag tag-note">CATATAN</span>
+                    <span class="note-date">${note.date}</span>
+                </div>
+                <div class="note-body">${escHtml(note.body)}</div>
+                <div class="note-actions">
+                    <button class="note-btn done-btn" onclick="toggleNoteDone(${note.id})">${note.done ? '↺ Aktifkan' : '✓ Selesai'}</button>
+                    <button class="note-btn del-btn" onclick="deleteNote(${note.id})">✕ Hapus</button>
+                </div>
+            </div>`;
+        }
+    }).join('');
+}
+
+function loadNoteToFields(id) {
+    const note = notes.find(n => n.id === id);
+    if (!note || note.type !== 'pair') return;
+    document.getElementById('keyword').value = note.keyword;
+    document.getElementById('replacement').value = note.replacement;
+    showToast("Kolom diisi dari catatan!");
+}
+
+function toggleNoteDone(id) {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    note.done = !note.done;
+    saveNotes();
+    renderNotes();
+}
+
+function deleteNote(id) {
+    notes = notes.filter(n => n.id !== id);
+    saveNotes();
+    renderNotes();
+    showToast("Catatan dihapus.");
+}
+
+function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatDate(d) {
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2,'0');
+    const min = String(d.getMinutes()).padStart(2,'0');
+    return `${dd}/${mm}/${yy} ${hh}:${min}`;
+}
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ===== INIT =====
+loadNotes();
+
+// Show reminder for pending notes on load
+window.addEventListener('load', () => {
+    const pending = notes.filter(n => !n.done);
+    if (pending.length > 0) {
+        setTimeout(() => showToast(`📜 ${pending.length} tugas catatan menunggu!`), 800);
+    }
+});
+</script>
+</body>
+</html>
